@@ -6,13 +6,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.alibaba.druid.PoolTestCase;
 import org.junit.Assert;
 
+import com.alibaba.druid.pool.DataSourceNotAvailableException;
 import com.alibaba.druid.pool.DruidDataSource;
 
 import junit.framework.TestCase;
 
-public class FailFastTest extends TestCase {
+public class FailFastTest extends PoolTestCase {
 
     private DruidDataSource dataSource;
     
@@ -20,6 +22,8 @@ public class FailFastTest extends TestCase {
 
     @SuppressWarnings("serial")
     protected void setUp() throws Exception {
+        super.setUp();
+
         dataSource = new DruidDataSource() {
             public PhysicalConnectionInfo createPhysicalConnection() throws SQLException {
                 try {
@@ -44,6 +48,8 @@ public class FailFastTest extends TestCase {
 
     protected void tearDown() throws Exception {
         dataSource.close();
+
+        super.tearDown();
     }
 
     public void testDefault() throws Exception {
@@ -70,8 +76,9 @@ public class FailFastTest extends TestCase {
         connectStartLatch.await();
         
         latch.countDown();
-        
         connectEndLatch.await(3, TimeUnit.SECONDS);
+        SQLException ex = errorHolder.get();
+        Assert.assertTrue(ex instanceof DataSourceNotAvailableException);
     }
 
 }
